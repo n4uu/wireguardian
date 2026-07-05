@@ -1,0 +1,6 @@
+# NEVER commit VPN credentials — WireGuard/OpenVPN configs carry private keys.
+*.conf
+*.ovpn
+*.key
+*.auth
+*.mark
