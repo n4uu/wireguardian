@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# vpn.sh — bring a Proton WireGuard tunnel up and REFUSE to continue unless the
+# vpn.sh: bring a Proton WireGuard tunnel up and REFUSE to continue unless the
 # exit IP actually changed and DNS isn't leaking. Optional --killswitch fails
 # traffic closed: only the tunnel (and your local LAN) may leave the box.
 #
@@ -41,15 +41,15 @@ leak_check() {
     if [ -z "$dns_now" ]; then
         echo "[*] DNS-leak test skipped (install dnsutils for 'dig' to enable it)."
     elif [ "$dns_now" = "$real_ip" ] || { [ -n "$dns_before" ] && [ "$dns_now" = "$dns_before" ]; }; then
-        echo "[!] DNS LEAK: resolver egress ($dns_now) is your pre-VPN path — DNS is bypassing the tunnel!" >&2
+        echo "[!] DNS LEAK: resolver egress ($dns_now) is your pre-VPN path: DNS is bypassing the tunnel" >&2
         rc=1
     else
-        echo "[*] DNS OK — resolver egress: $dns_now (changed, not your real IP)."
+        echo "[*] DNS OK, resolver egress: $dns_now (changed, not your real IP)."
     fi
 
     local v6; v6="$(myip6)"
     if [ -n "$v6" ]; then
-        echo "[!] IPv6 reachable outside the tunnel ($v6) — enable --killswitch or disable IPv6 to avoid v6 leaks." >&2
+        echo "[!] IPv6 reachable outside the tunnel ($v6); enable --killswitch or disable IPv6 to avoid v6 leaks." >&2
         rc=1
     fi
     return $rc
@@ -59,7 +59,7 @@ leak_check() {
 ks_on() {
     local mark; mark="$(sudo wg show "$NAME" fwmark 2>/dev/null || true)"
     if [ -z "$mark" ] || [ "$mark" = "off" ]; then
-        echo "[!] no fwmark on '$NAME' — kill-switch needs wg-quick's default routing. Skipping." >&2
+        echo "[!] no fwmark on '$NAME': kill-switch needs wg-quick's default routing. Skipping." >&2
         return 0
     fi
     ks_off
@@ -69,7 +69,7 @@ ks_on() {
         sudo iptables -I OUTPUT -d "$net" -j ACCEPT
     done
     echo "$mark" | sudo tee "$KS_STATE" >/dev/null
-    echo "[+] kill-switch ON — only '$NAME' and local LAN may send traffic (fail-closed)."
+    echo "[+] kill-switch ON: only '$NAME' and local LAN may send traffic (fail-closed)."
 }
 
 ks_off() {
@@ -86,7 +86,7 @@ ks_off() {
 }
 
 up() {
-    [ -f "$CONF" ] || { echo "[!] no config at $CONF — download a WireGuard config from Proton first." >&2; exit 1; }
+    [ -f "$CONF" ] || { echo "[!] no config at $CONF; download a WireGuard config from Proton first." >&2; exit 1; }
 
     local before dns_before after
     before="$(myip)"; dns_before="$(dns_egress)"
@@ -98,7 +98,7 @@ up() {
     after="$(myip)"
     echo "[*] exit IP after VPN  : ${after:-unknown} ($(mycountry))"
     if [ -z "$after" ] || [ "$after" = "$before" ]; then
-        echo "[!] IP did NOT change — the tunnel isn't carrying traffic. Tearing it down." >&2
+        echo "[!] IP did NOT change: the tunnel isn't carrying traffic. Tearing it down." >&2
         sudo wg-quick down "$NAME" || true
         exit 1
     fi
@@ -106,7 +106,7 @@ up() {
     [ "$KILLSWITCH" -eq 1 ] && ks_on
 
     if leak_check "$before" "$dns_before"; then
-        echo "[+] VPN up, exit IP $after — checks clean. Safe to run snitch."
+        echo "[+] VPN up, exit IP $after, checks clean. Safe to run snitch."
     else
         echo "[!] VPN up, exit IP $after, but a LEAK was flagged above. Fix it (or use --killswitch) before scanning." >&2
     fi
